@@ -34,9 +34,17 @@ class Settings(BaseSettings):
             url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
         elif url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql+asyncpg://", 1)
-        # asyncpg doesn't support channel_binding
-        url = url.replace("channel_binding=require", "").replace("&&", "&").rstrip("&?")
+        # asyncpg doesn't support these query params — strip them
+        import re
+        url = re.sub(r"[?&](?:sslmode|channel_binding)=[^&]*", "", url)
+        # Clean up leftover ? or & at the boundary
+        url = re.sub(r"\?&", "?", url).rstrip("?")
         return url
+
+    @property
+    def require_ssl(self) -> bool:
+        """Whether the original DATABASE_URL requested SSL."""
+        return "sslmode=require" in self.DATABASE_URL or "sslmode=verify" in self.DATABASE_URL
 
     @property
     def sync_database_url(self) -> str:
