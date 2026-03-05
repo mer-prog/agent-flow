@@ -4,6 +4,7 @@ from collections.abc import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api import auth, chat, conversations, escalations, knowledge, stats, tickets
 from app.config import settings
 from app.core.logging import setup_logging
 from app.mcp.server import mcp
@@ -29,6 +30,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# API routers
+app.include_router(auth.router)
+app.include_router(chat.router)
+app.include_router(conversations.router)
+app.include_router(tickets.router)
+app.include_router(escalations.router)
+app.include_router(knowledge.router)
+app.include_router(stats.router)
 
 # Mount MCP server on /mcp with Streamable HTTP transport
 app.mount("/mcp", mcp.http_app())
