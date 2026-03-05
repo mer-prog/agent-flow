@@ -23,7 +23,7 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(
-        Enum(UserRole, name="userrole", create_constraint=False, native_enum=True),
+        Enum(UserRole, name="userrole", create_constraint=False, native_enum=True, create_type=False),
         nullable=False,
         default=UserRole.customer,
     )

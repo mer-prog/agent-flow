@@ -23,7 +23,7 @@ class Message(Base):
         UUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False
     )
     role: Mapped[MessageRole] = mapped_column(
-        Enum(MessageRole, name="messagerole", create_constraint=False, native_enum=True), nullable=False
+        Enum(MessageRole, name="messagerole", create_constraint=False, native_enum=True, create_type=False), nullable=False
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB)

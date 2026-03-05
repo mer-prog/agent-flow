@@ -32,13 +32,13 @@ class AgentRun(Base):
         UUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False
     )
     agent_type: Mapped[AgentType] = mapped_column(
-        Enum(AgentType, name="agenttype", create_constraint=False, native_enum=True), nullable=False
+        Enum(AgentType, name="agenttype", create_constraint=False, native_enum=True, create_type=False), nullable=False
     )
     input_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
     output_data: Mapped[dict | None] = mapped_column(JSONB)
     duration_ms: Mapped[int | None] = mapped_column(Integer)
     status: Mapped[AgentRunStatus] = mapped_column(
-        Enum(AgentRunStatus, name="agentrunstatus", create_constraint=False, native_enum=True),
+        Enum(AgentRunStatus, name="agentrunstatus", create_constraint=False, native_enum=True, create_type=False),
         nullable=False,
         default=AgentRunStatus.started,
     )

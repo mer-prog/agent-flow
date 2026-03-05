@@ -29,7 +29,7 @@ class Escalation(Base):
     reason: Mapped[str] = mapped_column(Text, nullable=False)
     sentiment_score: Mapped[float | None] = mapped_column(Float)
     status: Mapped[EscalationStatus] = mapped_column(
-        Enum(EscalationStatus, name="escalationstatus", create_constraint=False, native_enum=True),
+        Enum(EscalationStatus, name="escalationstatus", create_constraint=False, native_enum=True, create_type=False),
         nullable=False,
         default=EscalationStatus.pending,
     )

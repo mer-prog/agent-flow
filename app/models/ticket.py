@@ -36,12 +36,12 @@ class Ticket(Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[TicketStatus] = mapped_column(
-        Enum(TicketStatus, name="ticketstatus", create_constraint=False, native_enum=True),
+        Enum(TicketStatus, name="ticketstatus", create_constraint=False, native_enum=True, create_type=False),
         nullable=False,
         default=TicketStatus.open,
     )
     priority: Mapped[TicketPriority] = mapped_column(
-        Enum(TicketPriority, name="ticketpriority", create_constraint=False, native_enum=True),
+        Enum(TicketPriority, name="ticketpriority", create_constraint=False, native_enum=True, create_type=False),
         nullable=False,
         default=TicketPriority.medium,
     )
