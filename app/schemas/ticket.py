@@ -1,25 +1,25 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.models.ticket import TicketPriority, TicketStatus
 
 
 class TicketCreate(BaseModel):
-    title: str
-    description: str
+    title: str = Field(min_length=1, max_length=255)
+    description: str = Field(min_length=1, max_length=10000)
     priority: TicketPriority = TicketPriority.medium
-    category: str | None = None
+    category: str | None = Field(default=None, max_length=100)
     conversation_id: uuid.UUID | None = None
 
 
 class TicketUpdate(BaseModel):
-    title: str | None = None
-    description: str | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    description: str | None = Field(default=None, min_length=1, max_length=10000)
     status: TicketStatus | None = None
     priority: TicketPriority | None = None
-    category: str | None = None
+    category: str | None = Field(default=None, max_length=100)
     assigned_to: uuid.UUID | None = None
 
 

@@ -136,6 +136,7 @@ async def delete_article(
 @router.post("/search", response_model=list[KBSearchResult])
 async def search(
     body: KBSearchRequest,
+    user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[dict]:
     results = await search_knowledge_base(db, body.query, body.top_k)
