@@ -89,6 +89,12 @@ async def update_ticket(
         raise HTTPException(status_code=403, detail="Access denied")
 
     update_data = body.model_dump(exclude_unset=True)
+
+    # Customers can only update title and description
+    if user.role == UserRole.customer:
+        allowed = {"title", "description"}
+        update_data = {k: v for k, v in update_data.items() if k in allowed}
+
     for field, value in update_data.items():
         setattr(ticket, field, value)
 

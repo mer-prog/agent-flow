@@ -2,8 +2,16 @@ from __future__ import annotations
 
 import time
 
+from app.agents import extract_last_message
 from app.agents.state import AgentState
 from app.config import settings
+
+# Sentiment score thresholds (0.0 = very negative, 1.0 = very positive)
+SENTIMENT_VERY_NEGATIVE = 0.1
+SENTIMENT_NEGATIVE = 0.25
+SENTIMENT_SLIGHTLY_NEGATIVE = 0.4
+SENTIMENT_NEUTRAL = 0.6
+SENTIMENT_LLM_FALLBACK = 0.5
 
 _NEGATIVE_WORDS = {
     "angry", "furious", "frustrated", "unacceptable", "terrible", "worst",
@@ -19,23 +27,19 @@ def _analyze_sentiment_demo(text: str) -> float:
     negative_count = len(words & _NEGATIVE_WORDS)
 
     if negative_count >= 3:
-        return 0.1
+        return SENTIMENT_VERY_NEGATIVE
     elif negative_count >= 2:
-        return 0.25
+        return SENTIMENT_NEGATIVE
     elif negative_count >= 1:
-        return 0.4
-    return 0.6
+        return SENTIMENT_SLIGHTLY_NEGATIVE
+    return SENTIMENT_NEUTRAL
 
 
 async def _analyze_sentiment_live(text: str) -> float:
     """LLM-based sentiment analysis using Claude Haiku."""
-    from langchain_anthropic import ChatAnthropic
+    from app.agents.llm import get_llm
 
-    llm = ChatAnthropic(
-        model="claude-haiku-4-5-20241022",
-        api_key=settings.ANTHROPIC_API_KEY,
-        max_tokens=50,
-    )
+    llm = get_llm()
 
     resp = await llm.ainvoke(
         [
@@ -53,18 +57,14 @@ async def _analyze_sentiment_live(text: str) -> float:
     try:
         return max(0.0, min(1.0, float(resp.content.strip())))
     except ValueError:
-        return 0.5
+        return SENTIMENT_LLM_FALLBACK
 
 
 async def escalation_agent(state: AgentState) -> dict:
     """Escalation Agent: sentiment analysis + human-in-the-loop."""
     start = time.time()
 
-    messages = state.get("messages", [])
-    last_msg = ""
-    if messages:
-        last = messages[-1]
-        last_msg = last.content if hasattr(last, "content") else str(last.get("content", ""))
+    last_msg = extract_last_message(state)
 
     if settings.is_live_mode:
         sentiment = await _analyze_sentiment_live(last_msg)

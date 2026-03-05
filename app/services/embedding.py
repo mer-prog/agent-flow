@@ -5,23 +5,24 @@ import struct
 
 from app.config import settings
 
+EMBEDDING_DIM = 1536
+UINT32_MAX = 0xFFFFFFFF
+
 
 def _sha256_pseudo_embedding(text: str) -> list[float]:
-    """Generate a deterministic 1536-d pseudo-embedding from SHA-256 hash.
+    """Generate a deterministic pseudo-embedding from SHA-256 hash.
 
     Used in demo mode when no OpenAI API key is available.
     """
     h = hashlib.sha256(text.lower().strip().encode()).digest()
-    # Expand 32 bytes → 1536 floats by repeated hashing
     vectors: list[float] = []
     seed = h
-    while len(vectors) < 1536:
+    while len(vectors) < EMBEDDING_DIM:
         seed = hashlib.sha256(seed).digest()
-        # Unpack 32 bytes as 8 floats (4 bytes each, little-endian unsigned int → normalise)
         for i in range(0, 32, 4):
             val = struct.unpack("<I", seed[i : i + 4])[0]
-            vectors.append((val / 0xFFFFFFFF) * 2 - 1)  # normalise to [-1, 1]
-    return vectors[:1536]
+            vectors.append((val / UINT32_MAX) * 2 - 1)
+    return vectors[:EMBEDDING_DIM]
 
 
 async def get_embedding(text: str) -> list[float]:

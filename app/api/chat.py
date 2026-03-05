@@ -5,17 +5,18 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
+from collections.abc import AsyncGenerator
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.agents.graph import agent_graph
 from app.api.deps import get_current_user, get_db
-from app.models.conversation import Conversation, ConversationStatus
+from app.models.conversation import Conversation
 from app.models.message import Message, MessageRole
 from app.models.user import User
 from app.schemas.chat import ChatRequest
-from app.schemas.conversation import ConversationDetail, MessageResponse
+from app.schemas.conversation import MessageResponse
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -53,7 +54,7 @@ async def chat(
 
     conversation_id = conversation.id
 
-    async def event_stream():  # type: ignore[no-untyped-def]
+    async def event_stream() -> AsyncGenerator[str, None]:
         yield _sse("conversation_id", str(conversation_id))
 
         # Run agent graph
@@ -102,7 +103,7 @@ async def chat(
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
-async def _get_session():  # type: ignore[no-untyped-def]
+def _get_session() -> AsyncSession:
     from app.database import async_session
     return async_session()
 

@@ -28,10 +28,10 @@ class Ticket(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     conversation_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("conversations.id")
+        UUID(as_uuid=True), ForeignKey("conversations.id"), index=True
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -39,11 +39,13 @@ class Ticket(Base):
         Enum(TicketStatus, name="ticketstatus", create_constraint=False, native_enum=True, create_type=False),
         nullable=False,
         default=TicketStatus.open,
+        index=True,
     )
     priority: Mapped[TicketPriority] = mapped_column(
         Enum(TicketPriority, name="ticketpriority", create_constraint=False, native_enum=True, create_type=False),
         nullable=False,
         default=TicketPriority.medium,
+        index=True,
     )
     category: Mapped[str | None] = mapped_column(String(100))
     assigned_to: Mapped[uuid.UUID | None] = mapped_column(

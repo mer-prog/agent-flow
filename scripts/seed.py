@@ -2,9 +2,13 @@
 
 Idempotent — checks for existing data before inserting.
 Does NOT create tables or enums; Alembic handles schema creation.
+
+Seed passwords default to demo values and MUST be changed in production
+via SEED_ADMIN_PASSWORD, SEED_AGENT_PASSWORD, SEED_CUSTOMER_PASSWORD env vars.
 """
 
 import asyncio
+import os
 
 from sqlalchemy import select
 
@@ -88,22 +92,26 @@ async def seed() -> None:
             print("Seed data already exists, skipping.")
             return
 
-        # Users
+        # Users — passwords from env vars, falling back to demo defaults
+        admin_pw = os.environ.get("SEED_ADMIN_PASSWORD", "admin123")
+        agent_pw = os.environ.get("SEED_AGENT_PASSWORD", "agent123")
+        customer_pw = os.environ.get("SEED_CUSTOMER_PASSWORD", "demo1234")
+
         admin = User(
             email="admin@example.com",
-            hashed_password=hash_password("admin123"),
+            hashed_password=hash_password(admin_pw),
             full_name="Admin User",
             role=UserRole.admin,
         )
         agent = User(
             email="agent@example.com",
-            hashed_password=hash_password("agent123"),
+            hashed_password=hash_password(agent_pw),
             full_name="Support Agent",
             role=UserRole.agent,
         )
         customer = User(
             email="demo@example.com",
-            hashed_password=hash_password("demo123"),
+            hashed_password=hash_password(customer_pw),
             full_name="Demo Customer",
             role=UserRole.customer,
         )

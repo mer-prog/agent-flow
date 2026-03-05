@@ -4,6 +4,7 @@ import re
 import time
 import uuid
 
+from app.agents import extract_last_message
 from app.agents.state import AgentState
 from app.config import settings
 
@@ -41,13 +42,9 @@ def _extract_ticket_demo(text: str) -> dict:
 
 async def _extract_ticket_live(text: str) -> dict:
     """LLM-based ticket field extraction using Claude Haiku."""
-    from langchain_anthropic import ChatAnthropic
+    from app.agents.llm import get_llm
 
-    llm = ChatAnthropic(
-        model="claude-haiku-4-5-20241022",
-        api_key=settings.ANTHROPIC_API_KEY,
-        max_tokens=200,
-    )
+    llm = get_llm()
 
     resp = await llm.ainvoke(
         [
@@ -80,11 +77,7 @@ async def ticket_agent(state: AgentState) -> dict:
     """Ticket Agent: creates support tickets from conversation."""
     start = time.time()
 
-    messages = state.get("messages", [])
-    last_msg = ""
-    if messages:
-        last = messages[-1]
-        last_msg = last.content if hasattr(last, "content") else str(last.get("content", ""))
+    last_msg = extract_last_message(state)
 
     if settings.is_live_mode:
         ticket_data = await _extract_ticket_live(last_msg)

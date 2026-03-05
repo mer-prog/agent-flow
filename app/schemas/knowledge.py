@@ -1,19 +1,19 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class KBArticleCreate(BaseModel):
-    title: str
-    content: str
-    category: str | None = None
+    title: str = Field(min_length=1, max_length=255)
+    content: str = Field(min_length=1, max_length=100000)
+    category: str | None = Field(default=None, max_length=100)
 
 
 class KBArticleUpdate(BaseModel):
-    title: str | None = None
-    content: str | None = None
-    category: str | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=255)
+    content: str | None = Field(default=None, min_length=1, max_length=100000)
+    category: str | None = Field(default=None, max_length=100)
     is_published: bool | None = None
 
 

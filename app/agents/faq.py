@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 
+from app.agents import extract_last_message
 from app.agents.state import AgentState
 from app.config import settings
 
@@ -34,13 +35,9 @@ def _generate_demo_answer(query: str, kb_results: list[dict]) -> str:
 
 async def _generate_live_answer(query: str, kb_results: list[dict]) -> str:
     """Generate an LLM-powered answer using Claude Haiku + RAG context."""
-    from langchain_anthropic import ChatAnthropic
+    from app.agents.llm import get_llm
 
-    llm = ChatAnthropic(
-        model="claude-haiku-4-5-20241022",
-        api_key=settings.ANTHROPIC_API_KEY,
-        max_tokens=500,
-    )
+    llm = get_llm()
 
     context = "\n\n".join(
         f"[{r['article_title']}]: {r['content']}" for r in kb_results
@@ -69,12 +66,7 @@ async def faq_agent(state: AgentState) -> dict:
     """FAQ Agent: RAG-powered question answering."""
     start = time.time()
 
-    messages = state.get("messages", [])
-    last_msg = ""
-    if messages:
-        last = messages[-1]
-        last_msg = last.content if hasattr(last, "content") else str(last.get("content", ""))
-
+    last_msg = extract_last_message(state)
     kb_results = state.get("kb_results", [])
 
     if settings.is_live_mode:
