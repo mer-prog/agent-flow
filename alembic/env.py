@@ -20,12 +20,10 @@ from app.models import (  # noqa: F401 — ensure all models are imported for au
 
 config = context.config
 
-# Ensure the async URL works for both async and sync paths.
-# Convert postgresql+asyncpg:// → postgresql+psycopg2:// for offline/sync use,
-# keep asyncpg for the async online path.
-_db_url = settings.DATABASE_URL
-_sync_url = _db_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
-config.set_main_option("sqlalchemy.url", _db_url)
+# Use centralized URL properties from settings:
+# - async_database_url: postgresql+asyncpg:// (for online async migrations)
+# - sync_database_url:  postgresql+psycopg2:// (for offline sync migrations)
+config.set_main_option("sqlalchemy.url", settings.async_database_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
@@ -35,7 +33,7 @@ target_metadata = Base.metadata
 
 def run_migrations_offline() -> None:
     context.configure(
-        url=_sync_url,
+        url=settings.sync_database_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},

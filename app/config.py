@@ -26,5 +26,29 @@ class Settings(BaseSettings):
     def is_live_mode(self) -> bool:
         return bool(self.ANTHROPIC_API_KEY and self.OPENAI_API_KEY)
 
+    @property
+    def async_database_url(self) -> str:
+        """DATABASE_URL normalized for asyncpg."""
+        url = self.DATABASE_URL
+        if url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        # asyncpg doesn't support channel_binding
+        url = url.replace("channel_binding=require", "").replace("&&", "&").rstrip("&?")
+        return url
+
+    @property
+    def sync_database_url(self) -> str:
+        """DATABASE_URL normalized for psycopg2 (sync)."""
+        url = self.DATABASE_URL
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+psycopg2://", 1)
+        elif url.startswith("postgresql+asyncpg://"):
+            url = url.replace("postgresql+asyncpg://", "postgresql+psycopg2://", 1)
+        elif url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
+        return url
+
 
 settings = Settings()
