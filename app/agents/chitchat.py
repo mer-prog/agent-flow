@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 
+from app.agents import extract_last_message
 from app.agents.state import AgentState
 from app.config import settings
 
@@ -56,11 +57,7 @@ async def chitchat_agent(state: AgentState) -> dict:
     """Chitchat Agent: general conversational responses."""
     start = time.time()
 
-    messages = state.get("messages", [])
-    last_msg = ""
-    if messages:
-        last = messages[-1]
-        last_msg = last.content if hasattr(last, "content") else str(last.get("content", ""))
+    last_msg = extract_last_message(state)
 
     if settings.is_live_mode:
         response = await _respond_live([{"content": last_msg}])
