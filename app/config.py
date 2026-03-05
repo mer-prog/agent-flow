@@ -39,8 +39,8 @@ class Settings(BaseSettings):
         """DATABASE_URL normalized for asyncpg.
 
         - Fixes scheme to postgresql+asyncpg://
-        - Replaces sslmode=require with ssl=true (asyncpg format)
-        - Removes channel_binding=require (unsupported by asyncpg)
+        - REMOVES sslmode (asyncpg doesn't support it; SSL is passed via connect_args)
+        - REMOVES channel_binding (unsupported by asyncpg)
         """
         url = self.DATABASE_URL
         # Fix scheme
@@ -48,11 +48,15 @@ class Settings(BaseSettings):
             url = "postgresql+asyncpg://" + url[len("postgres://"):]
         elif url.startswith("postgresql://"):
             url = "postgresql+asyncpg://" + url[len("postgresql://"):]
-        # sslmode=require → ssl=true (asyncpg understands ssl=true)
-        url = re.sub(r"sslmode=require", "ssl=true", url)
-        # Remove channel_binding (asyncpg doesn't support it)
+        # Remove sslmode and channel_binding — asyncpg doesn't support either
+        url = _strip_param(url, "sslmode")
         url = _strip_param(url, "channel_binding")
         return url
+
+    @property
+    def needs_ssl(self) -> bool:
+        """Whether the original DATABASE_URL requested SSL (i.e. Neon / cloud PG)."""
+        return "sslmode=" in self.DATABASE_URL
 
     @property
     def sync_database_url(self) -> str:
