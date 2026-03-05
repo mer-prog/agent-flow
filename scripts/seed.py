@@ -1,22 +1,26 @@
-"""Seed script: creates demo user, sample KB articles, and sample tickets."""
+"""Seed script: creates demo users, sample KB articles, and sample tickets.
+
+Idempotent — checks for existing data before inserting.
+Does NOT create tables or enums; Alembic handles schema creation.
+"""
 
 import asyncio
 
-from app.config import settings
+from sqlalchemy import select
+
 from app.core.security import hash_password
-from app.database import async_session, engine, Base
+from app.database import async_session
 from app.models import (
-    User,
-    UserRole,
+    Conversation,
+    ConversationStatus,
     KBArticle,
     Ticket,
     TicketPriority,
     TicketStatus,
-    Conversation,
-    ConversationStatus,
+    User,
+    UserRole,
 )
 from app.services.knowledge import chunk_and_embed_article
-
 
 ARTICLES = [
     {
@@ -78,7 +82,13 @@ ARTICLES = [
 
 async def seed() -> None:
     async with async_session() as db:
-        # Demo user
+        # Check if seed data already exists
+        result = await db.execute(select(User).where(User.email == "admin@example.com"))
+        if result.scalar_one_or_none():
+            print("Seed data already exists, skipping.")
+            return
+
+        # Users
         admin = User(
             email="admin@example.com",
             hashed_password=hash_password("admin123"),
@@ -108,7 +118,7 @@ async def seed() -> None:
             await chunk_and_embed_article(db, article.id, article.content)
 
         # Sample tickets
-        tickets = [
+        db.add_all([
             Ticket(
                 user_id=customer.id,
                 title="Cannot reset password",
@@ -134,23 +144,21 @@ async def seed() -> None:
                 status=TicketStatus.resolved,
                 category="feature",
             ),
-        ]
-        db.add_all(tickets)
+        ])
 
         # Sample conversation
-        convo = Conversation(
+        db.add(Conversation(
             user_id=customer.id,
             title="Pricing inquiry",
             status=ConversationStatus.active,
-        )
-        db.add(convo)
+        ))
 
         await db.commit()
 
     print("Seed data created successfully!")
     print("  Users: admin@example.com/admin123, agent@example.com/agent123, demo@example.com/demo123")
     print(f"  KB Articles: {len(ARTICLES)}")
-    print(f"  Tickets: {len(tickets)}")
+    print("  Tickets: 3")
 
 
 if __name__ == "__main__":
