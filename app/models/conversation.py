@@ -24,7 +24,7 @@ class Conversation(Base):
     )
     title: Mapped[str | None] = mapped_column(String(255))
     status: Mapped[ConversationStatus] = mapped_column(
-        Enum(ConversationStatus, name="conversationstatus", native_enum=True),
+        Enum(ConversationStatus, name="conversationstatus", create_constraint=False, native_enum=True),
         nullable=False,
         default=ConversationStatus.active,
     )
