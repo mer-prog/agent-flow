@@ -1,3 +1,5 @@
+import logging
+
 import structlog
 
 from app.config import settings
@@ -16,7 +18,7 @@ def setup_logging() -> None:
             else structlog.processors.JSONRenderer(),
         ],
         wrapper_class=structlog.make_filtering_bound_logger(
-            structlog.get_level_from_name(settings.LOG_LEVEL)
+            logging.getLevelName(settings.LOG_LEVEL)
         ),
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(),
