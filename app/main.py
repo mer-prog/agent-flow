@@ -1,19 +1,28 @@
+import pathlib
 from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api import auth, chat, conversations, escalations, knowledge, stats, tickets
 from app.config import settings
 from app.core.logging import setup_logging
 from app.mcp.server import mcp
 
+import structlog
+
+log = structlog.get_logger()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     setup_logging()
+    mode = "live" if settings.is_live_mode else "demo"
+    structlog.get_logger().info("AgentFlow starting", mode=mode, env=settings.APP_ENV)
     yield
+    structlog.get_logger().info("AgentFlow shutting down")
 
 
 app = FastAPI(
@@ -50,3 +59,9 @@ async def health() -> dict[str, str]:
         "status": "ok",
         "mode": "live" if settings.is_live_mode else "demo",
     }
+
+
+# Serve frontend static files in production
+_static_dir = pathlib.Path(__file__).parent / "static"
+if _static_dir.is_dir():
+    app.mount("/", StaticFiles(directory=_static_dir, html=True), name="static")

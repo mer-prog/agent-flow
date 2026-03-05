@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: agent-flow
+    runtime: python
+    plan: free
+    buildCommand: |
+      pip install uv &&
+      uv sync &&
+      cd frontend && npm ci && npm run build && cd .. &&
+      mkdir -p app/static && cp -r frontend/dist/* app/static/
+    startCommand: uv run uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agent-flow-db
+          property: connectionURI
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: APP_ENV
+        value: production
+      - key: CORS_ORIGINS
+        value: '[]'
+
+databases:
+  - name: agent-flow-db
+    plan: free
+    databaseName: agentflow
+    postgresMajorVersion: "17"
