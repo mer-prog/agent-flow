@@ -1,4 +1,12 @@
+import re
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _strip_param(url: str, param: str) -> str:
+    """Remove a query parameter from a URL."""
+    url = re.sub(rf"([?&]){param}=[^&]*&?", r"\1", url)
+    return url.rstrip("?&")
 
 
 class Settings(BaseSettings):
@@ -28,34 +36,42 @@ class Settings(BaseSettings):
 
     @property
     def async_database_url(self) -> str:
-        """DATABASE_URL normalized for asyncpg."""
+        """DATABASE_URL normalized for asyncpg.
+
+        - Fixes scheme to postgresql+asyncpg://
+        - Replaces sslmode=require with ssl=true (asyncpg format)
+        - Removes channel_binding=require (unsupported by asyncpg)
+        """
         url = self.DATABASE_URL
-        if url.startswith("postgresql://"):
-            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
-        elif url.startswith("postgres://"):
-            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
-        # asyncpg doesn't support these query params — strip them
-        import re
-        url = re.sub(r"[?&](?:sslmode|channel_binding)=[^&]*", "", url)
-        # Clean up leftover ? or & at the boundary
-        url = re.sub(r"\?&", "?", url).rstrip("?")
+        # Fix scheme
+        if url.startswith("postgres://"):
+            url = "postgresql+asyncpg://" + url[len("postgres://"):]
+        elif url.startswith("postgresql://"):
+            url = "postgresql+asyncpg://" + url[len("postgresql://"):]
+        # sslmode=require → ssl=true (asyncpg understands ssl=true)
+        url = re.sub(r"sslmode=require", "ssl=true", url)
+        # Remove channel_binding (asyncpg doesn't support it)
+        url = _strip_param(url, "channel_binding")
         return url
 
     @property
-    def require_ssl(self) -> bool:
-        """Whether the original DATABASE_URL requested SSL."""
-        return "sslmode=require" in self.DATABASE_URL or "sslmode=verify" in self.DATABASE_URL
-
-    @property
     def sync_database_url(self) -> str:
-        """DATABASE_URL normalized for psycopg2 (sync)."""
+        """DATABASE_URL normalized for psycopg2 (sync).
+
+        - Fixes scheme to postgresql+psycopg2://
+        - Keeps sslmode=require as-is (psycopg2 supports it)
+        - Removes channel_binding=require (not always supported)
+        """
         url = self.DATABASE_URL
+        # Fix scheme
         if url.startswith("postgres://"):
-            url = url.replace("postgres://", "postgresql+psycopg2://", 1)
+            url = "postgresql+psycopg2://" + url[len("postgres://"):]
         elif url.startswith("postgresql+asyncpg://"):
-            url = url.replace("postgresql+asyncpg://", "postgresql+psycopg2://", 1)
+            url = "postgresql+psycopg2://" + url[len("postgresql+asyncpg://"):]
         elif url.startswith("postgresql://"):
-            url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
+            url = "postgresql+psycopg2://" + url[len("postgresql://"):]
+        # Remove channel_binding
+        url = _strip_param(url, "channel_binding")
         return url
 
 
