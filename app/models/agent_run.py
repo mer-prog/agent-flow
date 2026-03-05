@@ -29,7 +29,7 @@ class AgentRun(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     conversation_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False
+        UUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False, index=True
     )
     agent_type: Mapped[AgentType] = mapped_column(
         Enum(AgentType, name="agenttype", create_constraint=False, native_enum=True, create_type=False), nullable=False

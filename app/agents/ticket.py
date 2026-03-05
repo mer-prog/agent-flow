@@ -41,13 +41,9 @@ def _extract_ticket_demo(text: str) -> dict:
 
 async def _extract_ticket_live(text: str) -> dict:
     """LLM-based ticket field extraction using Claude Haiku."""
-    from langchain_anthropic import ChatAnthropic
+    from app.agents.llm import get_llm
 
-    llm = ChatAnthropic(
-        model="claude-haiku-4-5-20241022",
-        api_key=settings.ANTHROPIC_API_KEY,
-        max_tokens=200,
-    )
+    llm = get_llm()
 
     resp = await llm.ainvoke(
         [

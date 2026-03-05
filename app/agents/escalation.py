@@ -29,13 +29,9 @@ def _analyze_sentiment_demo(text: str) -> float:
 
 async def _analyze_sentiment_live(text: str) -> float:
     """LLM-based sentiment analysis using Claude Haiku."""
-    from langchain_anthropic import ChatAnthropic
+    from app.agents.llm import get_llm
 
-    llm = ChatAnthropic(
-        model="claude-haiku-4-5-20241022",
-        api_key=settings.ANTHROPIC_API_KEY,
-        max_tokens=50,
-    )
+    llm = get_llm()
 
     resp = await llm.ainvoke(
         [

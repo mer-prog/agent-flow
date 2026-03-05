@@ -30,13 +30,9 @@ def _respond_demo(text: str) -> str:
 
 async def _respond_live(messages: list[dict]) -> str:
     """LLM-powered conversational response using Claude Haiku."""
-    from langchain_anthropic import ChatAnthropic
+    from app.agents.llm import get_llm
 
-    llm = ChatAnthropic(
-        model="claude-haiku-4-5-20241022",
-        api_key=settings.ANTHROPIC_API_KEY,
-        max_tokens=300,
-    )
+    llm = get_llm()
 
     last_msg = messages[-1]["content"] if messages else ""
 

@@ -34,13 +34,9 @@ def _generate_demo_answer(query: str, kb_results: list[dict]) -> str:
 
 async def _generate_live_answer(query: str, kb_results: list[dict]) -> str:
     """Generate an LLM-powered answer using Claude Haiku + RAG context."""
-    from langchain_anthropic import ChatAnthropic
+    from app.agents.llm import get_llm
 
-    llm = ChatAnthropic(
-        model="claude-haiku-4-5-20241022",
-        api_key=settings.ANTHROPIC_API_KEY,
-        max_tokens=500,
-    )
+    llm = get_llm()
 
     context = "\n\n".join(
         f"[{r['article_title']}]: {r['content']}" for r in kb_results

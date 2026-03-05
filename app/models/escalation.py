@@ -21,7 +21,7 @@ class Escalation(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     conversation_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False
+        UUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False, index=True
     )
     ticket_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("tickets.id")
@@ -32,6 +32,7 @@ class Escalation(Base):
         Enum(EscalationStatus, name="escalationstatus", create_constraint=False, native_enum=True, create_type=False),
         nullable=False,
         default=EscalationStatus.pending,
+        index=True,
     )
     reviewed_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id")

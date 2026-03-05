@@ -41,13 +41,9 @@ def _classify_demo(text: str) -> tuple[str, float]:
 
 async def _classify_live(messages: list[dict]) -> tuple[str, float]:
     """LLM-based intent classification using Claude Haiku."""
-    from langchain_anthropic import ChatAnthropic
+    from app.agents.llm import get_llm
 
-    llm = ChatAnthropic(
-        model="claude-haiku-4-5-20241022",
-        api_key=settings.ANTHROPIC_API_KEY,
-        max_tokens=100,
-    )
+    llm = get_llm()
 
     last_message = messages[-1]["content"] if messages else ""
     resp = await llm.ainvoke(

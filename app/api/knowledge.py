@@ -3,12 +3,12 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user, get_db
-from app.models.knowledge import KBArticle
+from app.models.knowledge import KBArticle, KBChunk
 from app.models.user import User, UserRole
 from app.schemas.knowledge import (
     KBArticleCreate,
@@ -106,9 +106,7 @@ async def update_article(
 
     # Re-chunk if content changed
     if "content" in update_data:
-        # Delete old chunks
-        for chunk in article.chunks:
-            await db.delete(chunk)
+        await db.execute(delete(KBChunk).where(KBChunk.article_id == article.id))
         await db.flush()
         await chunk_and_embed_article(db, article.id, article.content)
 
