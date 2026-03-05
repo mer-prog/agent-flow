@@ -21,24 +21,25 @@ def upgrade() -> None:
     # Enable pgvector extension
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
 
-    # Create enum types
-    userrole = sa.Enum("admin", "agent", "customer", name="userrole")
-    conversationstatus = sa.Enum("active", "closed", "archived", name="conversationstatus")
-    messagerole = sa.Enum("user", "assistant", "system", name="messagerole")
-    ticketstatus = sa.Enum("open", "in_progress", "resolved", "closed", name="ticketstatus")
-    ticketpriority = sa.Enum("low", "medium", "high", "urgent", name="ticketpriority")
-    escalationstatus = sa.Enum("pending", "approved", "rejected", "completed", name="escalationstatus")
-    agenttype = sa.Enum("router", "faq", "ticket", "escalation", "chitchat", "formatter", name="agenttype")
-    agentrunstatus = sa.Enum("started", "completed", "failed", name="agentrunstatus")
+    # Create enum types idempotently with raw SQL
+    op.execute("DO $$ BEGIN CREATE TYPE userrole AS ENUM ('admin', 'agent', 'customer'); EXCEPTION WHEN duplicate_object THEN null; END $$")
+    op.execute("DO $$ BEGIN CREATE TYPE conversationstatus AS ENUM ('active', 'closed', 'archived'); EXCEPTION WHEN duplicate_object THEN null; END $$")
+    op.execute("DO $$ BEGIN CREATE TYPE messagerole AS ENUM ('user', 'assistant', 'system'); EXCEPTION WHEN duplicate_object THEN null; END $$")
+    op.execute("DO $$ BEGIN CREATE TYPE ticketstatus AS ENUM ('open', 'in_progress', 'resolved', 'closed'); EXCEPTION WHEN duplicate_object THEN null; END $$")
+    op.execute("DO $$ BEGIN CREATE TYPE ticketpriority AS ENUM ('low', 'medium', 'high', 'urgent'); EXCEPTION WHEN duplicate_object THEN null; END $$")
+    op.execute("DO $$ BEGIN CREATE TYPE escalationstatus AS ENUM ('pending', 'approved', 'rejected', 'completed'); EXCEPTION WHEN duplicate_object THEN null; END $$")
+    op.execute("DO $$ BEGIN CREATE TYPE agenttype AS ENUM ('router', 'faq', 'ticket', 'escalation', 'chitchat', 'formatter'); EXCEPTION WHEN duplicate_object THEN null; END $$")
+    op.execute("DO $$ BEGIN CREATE TYPE agentrunstatus AS ENUM ('started', 'completed', 'failed'); EXCEPTION WHEN duplicate_object THEN null; END $$")
 
-    userrole.create(op.get_bind(), checkfirst=True)
-    conversationstatus.create(op.get_bind(), checkfirst=True)
-    messagerole.create(op.get_bind(), checkfirst=True)
-    ticketstatus.create(op.get_bind(), checkfirst=True)
-    ticketpriority.create(op.get_bind(), checkfirst=True)
-    escalationstatus.create(op.get_bind(), checkfirst=True)
-    agenttype.create(op.get_bind(), checkfirst=True)
-    agentrunstatus.create(op.get_bind(), checkfirst=True)
+    # Reference enums with create_type=False (already created above)
+    userrole = sa.Enum("admin", "agent", "customer", name="userrole", create_type=False)
+    conversationstatus = sa.Enum("active", "closed", "archived", name="conversationstatus", create_type=False)
+    messagerole = sa.Enum("user", "assistant", "system", name="messagerole", create_type=False)
+    ticketstatus = sa.Enum("open", "in_progress", "resolved", "closed", name="ticketstatus", create_type=False)
+    ticketpriority = sa.Enum("low", "medium", "high", "urgent", name="ticketpriority", create_type=False)
+    escalationstatus = sa.Enum("pending", "approved", "rejected", "completed", name="escalationstatus", create_type=False)
+    agenttype = sa.Enum("router", "faq", "ticket", "escalation", "chitchat", "formatter", name="agenttype", create_type=False)
+    agentrunstatus = sa.Enum("started", "completed", "failed", name="agentrunstatus", create_type=False)
 
     # users
     op.create_table(
@@ -161,6 +162,6 @@ def downgrade() -> None:
         "ticketpriority", "ticketstatus", "messagerole",
         "conversationstatus", "userrole",
     ]:
-        sa.Enum(name=name).drop(op.get_bind(), checkfirst=True)
+        op.execute(f"DROP TYPE IF EXISTS {name}")
 
     op.execute("DROP EXTENSION IF EXISTS vector")
