@@ -30,7 +30,9 @@ export default function AgentFlowPage() {
       <h1 className="text-2xl font-bold">{t("nav.agentFlow")}</h1>
 
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 overflow-auto">
-        <svg viewBox="0 0 560 360" className="w-full max-w-2xl mx-auto">
+        <svg viewBox="0 0 560 360" className="w-full max-w-2xl mx-auto" role="img" aria-labelledby="agent-flow-title agent-flow-desc">
+          <title id="agent-flow-title">Agent Flow Diagram</title>
+          <desc id="agent-flow-desc">Multi-agent graph: messages flow from Router to FAQ, Ticket, Escalation, or Chitchat agents, then to Formatter</desc>
           {/* START → Router */}
           <line x1="280" y1="10" x2="280" y2="35" stroke="#404040" strokeWidth="2" markerEnd="url(#arrow)" />
           <text x="280" y="8" textAnchor="middle" fill="#71717a" fontSize="10">START</text>

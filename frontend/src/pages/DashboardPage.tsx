@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   BarChart,
@@ -12,6 +12,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { Loader2 } from "lucide-react";
 import { apiFetch } from "../api/client";
 import type { DashboardStats, AgentPerformance } from "../types";
 
@@ -21,35 +22,67 @@ export default function DashboardPage() {
   const { t } = useTranslation();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [agents, setAgents] = useState<AgentPerformance[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    apiFetch<DashboardStats>("/stats").then(setStats).catch(() => {});
-    apiFetch<{ items: AgentPerformance[] }>("/stats/agent-performance")
-      .then((r) => setAgents(r.items))
-      .catch(() => {});
-  }, []);
+    const controller = new AbortController();
+    Promise.all([
+      apiFetch<DashboardStats>("/stats"),
+      apiFetch<{ items: AgentPerformance[] }>("/stats/agent-performance"),
+    ])
+      .then(([s, a]) => {
+        setStats(s);
+        setAgents(a.items);
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : t("common.error")))
+      .finally(() => setLoading(false));
+    return () => controller.abort();
+  }, [t]);
 
-  const kpiCards = stats
-    ? [
-        { label: t("dashboard.totalConversations"), value: stats.total_conversations },
-        { label: t("dashboard.activeConversations"), value: stats.active_conversations },
-        { label: t("dashboard.openTickets"), value: stats.open_tickets },
-        { label: t("dashboard.pendingEscalations"), value: stats.pending_escalations },
-        { label: t("dashboard.resolutionRate"), value: stats.resolution_rate != null ? `${stats.resolution_rate}%` : "—" },
-        { label: t("dashboard.avgResponseTime"), value: stats.avg_response_time_ms != null ? `${Math.round(stats.avg_response_time_ms)}ms` : "—" },
-      ]
-    : [];
+  const kpiCards = useMemo(
+    () =>
+      stats
+        ? [
+            { label: t("dashboard.totalConversations"), value: stats.total_conversations },
+            { label: t("dashboard.activeConversations"), value: stats.active_conversations },
+            { label: t("dashboard.openTickets"), value: stats.open_tickets },
+            { label: t("dashboard.pendingEscalations"), value: stats.pending_escalations },
+            { label: t("dashboard.resolutionRate"), value: stats.resolution_rate != null ? `${stats.resolution_rate}%` : "—" },
+            { label: t("dashboard.avgResponseTime"), value: stats.avg_response_time_ms != null ? `${Math.round(stats.avg_response_time_ms)}ms` : "—" },
+          ]
+        : [],
+    [stats, t],
+  );
 
-  const pieData = agents
-    .filter((a) => a.total_runs > 0)
-    .map((a) => ({ name: a.agent_type, value: a.total_runs }));
+  const pieData = useMemo(
+    () => agents.filter((a) => a.total_runs > 0).map((a) => ({ name: a.agent_type, value: a.total_runs })),
+    [agents],
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64" role="status">
+        <Loader2 className="animate-spin text-zinc-400" size={32} />
+        <span className="sr-only">{t("common.loading")}</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12" role="alert">
+        <p className="text-red-400">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">{t("nav.dashboard")}</h1>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {kpiCards.map((card) => (
           <div key={card.label} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
             <p className="text-xs text-zinc-500 mb-1">{card.label}</p>
@@ -60,7 +93,6 @@ export default function DashboardPage() {
 
       {/* Charts */}
       <div className="grid md:grid-cols-2 gap-4">
-        {/* Agent performance bar chart */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
           <h3 className="text-sm font-medium text-zinc-400 mb-4">Agent Performance</h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -78,14 +110,13 @@ export default function DashboardPage() {
           </ResponsiveContainer>
         </div>
 
-        {/* Ticket distribution pie chart */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
           <h3 className="text-sm font-medium text-zinc-400 mb-4">Agent Distribution</h3>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="value" label>
-                {pieData.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i % COLORS.length]!} />
+                {pieData.map((entry) => (
+                  <Cell key={entry.name} fill={COLORS[pieData.indexOf(entry) % COLORS.length]!} />
                 ))}
               </Pie>
               <Tooltip
